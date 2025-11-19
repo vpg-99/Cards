@@ -106,15 +106,6 @@ const CardList: React.FC<CardListProps> = ({
               </div>
             </div>
           )}
-
-          {/* No More Items - Only show when all server data is loaded */}
-          {!hasMore && users.length > 0 && !isLoadingMore && (
-            <div className="absolute bottom-0 left-0 right-0 p-3 text-center text-xs text-gray-500">
-              {hasClientSideFilters && serverLoadedCount > users.length
-                ? `Showing ${users.length} filtered results from ${serverLoadedCount} loaded users`
-                : "All users loaded"}
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -180,6 +180,56 @@ const RenderPane: React.FC<RenderPaneProps> = ({ selectedUser }) => {
               <p className="text-lg font-semibold text-gray-900">{joinDate}</p>
             </div>
           </div>
+
+          {/* Age */}
+          <div className="flex items-start">
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4 shrink-0">
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Age</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {selectedUser.age} years
+              </p>
+            </div>
+          </div>
+
+          {/* Gender */}
+          <div className="flex items-start">
+            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4 shrink-0">
+              <svg
+                className="w-6 h-6 text-gray-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Gender</p>
+              <p className="text-lg font-semibold text-gray-900 capitalize">
+                {selectedUser.gender}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Divider */}
