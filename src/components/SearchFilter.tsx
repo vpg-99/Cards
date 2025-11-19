@@ -12,6 +12,9 @@ interface SearchFilterProps {
   onFiltersChange: (filters: FilterOptions) => void;
   totalCount: number;
   loadedCount: number;
+  serverLoadedCount?: number;
+  isLoadingMore?: boolean;
+  maxUsers?: number;
 }
 
 const SearchFilter: React.FC<SearchFilterProps> = ({
@@ -19,6 +22,9 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
   onFiltersChange,
   totalCount,
   loadedCount,
+  serverLoadedCount = 0,
+  isLoadingMore = false,
+  maxUsers = 0,
 }) => {
   const [localSearch, setLocalSearch] = useState(filters.searchQuery);
   const [isDebouncing, setIsDebouncing] = useState(false);
@@ -97,11 +103,40 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
     <div className="bg-white p-4 shadow-sm border-b border-gray-200">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <div>
+        <div className="flex-1">
           <h2 className="text-xl font-bold text-gray-900">Users</h2>
-          <p className="text-sm text-gray-500">
-            Showing {loadedCount.toLocaleString()} users
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-gray-500">
+              Showing {loadedCount.toLocaleString()} users
+            </p>
+            {/* {isLoadingMore && serverLoadedCount < maxUsers && (
+              <div className="flex items-center gap-1 text-xs text-blue-600">
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                <span>
+                  Loading... ({serverLoadedCount.toLocaleString()}/
+                  {maxUsers.toLocaleString()})
+                </span>
+              </div>
+            )} */}
+          </div>
+          {serverLoadedCount > 0 && (
+            <div className="mt-1">
+              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                <div
+                  className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(
+                      (serverLoadedCount / maxUsers) * 100,
+                      100
+                    )}%`,
+                  }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {serverLoadedCount.toLocaleString()} loaded from server
+              </p>
+            </div>
+          )}
         </div>
         {activeFiltersCount > 0 && (
           <button

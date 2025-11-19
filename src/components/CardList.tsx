@@ -32,23 +32,27 @@ const CardList: React.FC<CardListProps> = ({
     count: users.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 100, // Height of each card
-    overscan: 5, // Render 5 extra items above/below for smoother scrolling
+    overscan: 10, // Render 10 extra items above/below for smoother scrolling with large datasets
   });
 
-  // Infinite scroll detection
+  // Aggressive infinite scroll detection for large datasets
   useEffect(() => {
     const scrollElement = parentRef.current;
     if (!scrollElement || !onLoadMore || !hasMore || isLoadingMore) return;
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollElement;
-      // Load more when within 200px of bottom
-      if (scrollTop + clientHeight >= scrollHeight - 200) {
+      // Load more when within 800px of bottom (more aggressive for large datasets)
+      if (scrollTop + clientHeight >= scrollHeight - 800) {
         onLoadMore();
       }
     };
 
     scrollElement.addEventListener("scroll", handleScroll);
+
+    // Also trigger immediately if we're near the bottom
+    handleScroll();
+
     return () => scrollElement.removeEventListener("scroll", handleScroll);
   }, [onLoadMore, hasMore, isLoadingMore]);
 
