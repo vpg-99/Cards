@@ -11,6 +11,8 @@ interface CardListProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   isLoadingMore?: boolean;
+  hasClientSideFilters?: boolean;
+  serverLoadedCount?: number;
 }
 
 const CardList: React.FC<CardListProps> = ({
@@ -21,6 +23,8 @@ const CardList: React.FC<CardListProps> = ({
   onLoadMore,
   hasMore,
   isLoadingMore,
+  hasClientSideFilters = false,
+  serverLoadedCount = 0,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +53,17 @@ const CardList: React.FC<CardListProps> = ({
   }, [onLoadMore, hasMore, isLoadingMore]);
 
   return (
-    <div className="flex-1 bg-white border-r border-gray-200 overflow-hidden flex flex-col">
+    <div className="flex-1 bg-white border-r border-gray-200 overflow-hidden flex flex-col relative">
+      {/* Loading Overlay for Filter Changes */}
+      {isLoadingMore && users.length === 0 && (
+        <div className="absolute top-0 left-0 right-0 z-10 bg-blue-50 border-b border-blue-200 px-4 py-2">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <span className="text-sm text-blue-700">Loading users...</span>
+          </div>
+        </div>
+      )}
+
       {/* Virtualized List */}
       <div ref={parentRef} className="flex-1 overflow-auto">
         <div
@@ -83,8 +97,8 @@ const CardList: React.FC<CardListProps> = ({
             );
           })}
 
-          {/* Loading More Indicator */}
-          {isLoadingMore && (
+          {/* Loading More Indicator (for infinite scroll) */}
+          {isLoadingMore && users.length > 0 && (
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
               <div className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -93,10 +107,12 @@ const CardList: React.FC<CardListProps> = ({
             </div>
           )}
 
-          {/* No More Items */}
-          {!hasMore && users.length > 0 && (
+          {/* No More Items - Only show when all server data is loaded */}
+          {!hasMore && users.length > 0 && !isLoadingMore && (
             <div className="absolute bottom-0 left-0 right-0 p-3 text-center text-xs text-gray-500">
-              All users loaded
+              {hasClientSideFilters && serverLoadedCount > users.length
+                ? `Showing ${users.length} filtered results from ${serverLoadedCount} loaded users`
+                : "All users loaded"}
             </div>
           )}
         </div>

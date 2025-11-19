@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { User } from "./types/user";
 import CardList from "./components/CardList";
@@ -16,6 +16,9 @@ function App() {
     gender: "",
     ageRange: "",
   });
+
+  // Track if this is the very first load
+  const hasLoadedOnce = useRef(false);
 
   // Infinite query for users
   const {
@@ -50,35 +53,58 @@ function App() {
       );
       return loadedCount < lastPage.total ? loadedCount : undefined;
     },
+    placeholderData: (previousData) => previousData, // Keep previous data while loading new data
   });
 
-  // Flatten all pages and apply client-side age filtering
+  // Mark that we've loaded data at least once
+  if (data && !hasLoadedOnce.current) {
+    hasLoadedOnce.current = true;
+  }
+
+  // Flatten all pages and apply ALL client-side filters
   const users = useMemo(() => {
     const allUsers = data?.pages.flatMap((page) => page.users) ?? [];
 
-    // Apply age range filter client-side
-    if (!filters.ageRange) return allUsers;
-
     return allUsers.filter((user) => {
-      const age = user.age;
-      switch (filters.ageRange) {
-        case "18-25":
-          return age >= 18 && age <= 25;
-        case "26-35":
-          return age >= 26 && age <= 35;
-        case "36-45":
-          return age >= 36 && age <= 45;
-        case "46-60":
-          return age >= 46 && age <= 60;
-        case "60+":
-          return age >= 60;
-        default:
-          return true;
+      // Apply gender filter client-side (when search is active, gender wasn't applied server-side)
+      if (filters.gender && filters.searchQuery) {
+        if (user.gender.toLowerCase() !== filters.gender.toLowerCase()) {
+          return false;
+        }
       }
+
+      // Apply age range filter client-side
+      if (filters.ageRange) {
+        const age = user.age;
+        switch (filters.ageRange) {
+          case "18-25":
+            return age >= 18 && age <= 25;
+          case "26-35":
+            return age >= 26 && age <= 35;
+          case "36-45":
+            return age >= 36 && age <= 45;
+          case "46-60":
+            return age >= 46 && age <= 60;
+          case "60+":
+            return age >= 60;
+          default:
+            break;
+        }
+      }
+
+      return true;
     });
-  }, [data, filters.ageRange]);
+  }, [data, filters.ageRange, filters.gender, filters.searchQuery]);
 
   const totalCount = data?.pages[0]?.total ?? 0;
+  const serverLoadedCount =
+    data?.pages.flatMap((page) => page.users).length ?? 0;
+
+  // Check if we have client-side filters active
+  const hasClientSideFilters = Boolean(
+    (filters.gender && filters.searchQuery) || // Gender when search is active
+      filters.ageRange // Age range is always client-side
+  );
 
   const handleSelectUser = (userId: number) => {
     setSelectedUsers((prev) => {
@@ -102,9 +128,13 @@ function App() {
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
     setSelectedUsers(new Set()); // Clear selections on filter change
+    // Note: We don't clear currentUser to keep RenderPane showing the same user
   };
 
-  if (isLoading) {
+  // Only show full-page loading on the very first load (before any data has been fetched)
+  const isInitialLoading = isLoading && !hasLoadedOnce.current;
+
+  if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="text-center">
@@ -150,7 +180,11 @@ function App() {
           onUserClick={handleUserClick}
           onLoadMore={fetchNextPage}
           hasMore={hasNextPage}
-          isLoadingMore={isFetchingNextPage}
+          isLoadingMore={
+            isFetchingNextPage || (isLoading && hasLoadedOnce.current)
+          }
+          hasClientSideFilters={hasClientSideFilters}
+          serverLoadedCount={serverLoadedCount}
         />
       </div>
 

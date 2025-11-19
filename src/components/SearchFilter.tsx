@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export interface FilterOptions {
   searchQuery: string;
@@ -21,14 +21,64 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
   loadedCount,
 }) => {
   const [localSearch, setLocalSearch] = useState(filters.searchQuery);
+  const [isDebouncing, setIsDebouncing] = useState(false);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search effect
+  useEffect(() => {
+    // Clear existing timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // If there's a difference, mark as debouncing
+    if (localSearch !== filters.searchQuery) {
+      setIsDebouncing(true);
+    }
+
+    // Set new timer - trigger search after 500ms of no typing
+    debounceTimer.current = setTimeout(() => {
+      if (localSearch !== filters.searchQuery) {
+        onFiltersChange({ ...filters, searchQuery: localSearch });
+      }
+      setIsDebouncing(false);
+    }, 500);
+
+    // Cleanup on unmount or when localSearch changes
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [localSearch]); // Only re-run when localSearch changes
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Clear debounce timer and search immediately on Enter
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    setIsDebouncing(false);
     onFiltersChange({ ...filters, searchQuery: localSearch });
+  };
+
+  const handleClearSearch = () => {
+    setLocalSearch("");
+    // Clear debounce timer to trigger immediate update
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    setIsDebouncing(false);
+    onFiltersChange({ ...filters, searchQuery: "" });
   };
 
   const handleClearAll = () => {
     setLocalSearch("");
+    // Clear debounce timer
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    setIsDebouncing(false);
     onFiltersChange({
       searchQuery: "",
       searchType: "all",
@@ -66,19 +116,25 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
       {/* Search Bar */}
       <form onSubmit={handleSearchSubmit} className="mb-3">
         <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          {isDebouncing ? (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          )}
           <input
             type="text"
             value={localSearch}
@@ -89,10 +145,7 @@ const SearchFilter: React.FC<SearchFilterProps> = ({
           {localSearch && (
             <button
               type="button"
-              onClick={() => {
-                setLocalSearch("");
-                onFiltersChange({ ...filters, searchQuery: "" });
-              }}
+              onClick={handleClearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <svg
