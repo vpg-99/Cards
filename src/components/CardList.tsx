@@ -23,8 +23,8 @@ const CardList: React.FC<CardListProps> = ({
   onLoadMore,
   hasMore,
   isLoadingMore,
-  hasClientSideFilters = false,
-  serverLoadedCount = 0,
+  hasClientSideFilters: _hasClientSideFilters = false,
+  serverLoadedCount: _serverLoadedCount = 0,
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
