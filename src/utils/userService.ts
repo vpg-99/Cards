@@ -11,8 +11,10 @@ export interface FetchUsersParams {
   filterValue?: string;
 }
 
+let globalIdCounter = 0;
+
 /**
- * Assign random status to users for demo purposes
+ * Assign random status to users for demo purposes and generate unique IDs
  */
 const assignStatusToUsers = (users: User[]): User[] => {
   const statuses: Array<"active" | "inactive" | "pending"> = [
@@ -20,10 +22,16 @@ const assignStatusToUsers = (users: User[]): User[] => {
     "inactive",
     "pending",
   ];
-  return users.map((user) => ({
-    ...user,
-    status: statuses[user.id % 3] as "active" | "inactive" | "pending",
-  }));
+  return users.map((user) => {
+    // Generate truly unique ID using global counter
+    globalIdCounter++;
+    const originalId = user.id;
+    return {
+      ...user,
+      id: globalIdCounter, // Globally unique ID that never repeats
+      status: statuses[originalId % 3] as "active" | "inactive" | "pending",
+    };
+  });
 };
 
 /**
@@ -117,23 +125,18 @@ export const fetchUsersWithParams = async ({
   filterKey,
   filterValue,
 }: FetchUsersParams): Promise<UsersResponse> => {
-  // Search takes priority
   if (search && search.trim()) {
-    // For name-specific searches, use the filter endpoint
     if (searchType === "firstName") {
       return filterUsers("firstName", search, limit, skip);
     } else if (searchType === "lastName") {
       return filterUsers("lastName", search, limit, skip);
     }
-    // Default: search all fields
     return searchUsers(search, limit, skip);
   }
 
-  // Then filter by gender
   if (filterKey && filterValue) {
     return filterUsers(filterKey, filterValue, limit, skip);
   }
 
-  // Default: fetch all
   return fetchUsers(limit, skip);
 };

@@ -10,7 +10,6 @@ const SelectionBubble: React.FC<SelectionBubbleProps> = ({ count }) => {
   return (
     <div className="fixed bottom-6 right-6 z-50">
       <div className="bg-blue-600 text-white rounded-full shadow-lg flex items-center gap-2 px-5 py-3 animate-bounce-subtle">
-        {/* Checkmark Icon */}
         <svg
           className="w-5 h-5"
           fill="none"
@@ -25,7 +24,6 @@ const SelectionBubble: React.FC<SelectionBubbleProps> = ({ count }) => {
           />
         </svg>
 
-        {/* Count and Text */}
         <span className="text-base font-semibold whitespace-nowrap">
           {count} selected
         </span>

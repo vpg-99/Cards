@@ -7,10 +7,9 @@ import SelectionBubble from "./components/SelectionBubble";
 import SearchFilter, { FilterOptions } from "./components/SearchFilter";
 import { fetchUsersWithParams } from "./utils/userService";
 
-// Configuration for large dataset loading
-const BATCH_SIZE = 100; // Fetch 100 users per request
-const MAX_USERS = 150000; // Maximum users to load (5000 batches × 30 or 1500 batches × 100)
-const AUTO_FETCH_ENABLED = true; // Enable aggressive auto-fetching
+const BATCH_SIZE = 100;
+const MAX_USERS = 120000;
+const AUTO_FETCH_ENABLED = true;
 
 function App() {
   const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
@@ -22,11 +21,9 @@ function App() {
     ageRange: "",
   });
 
-  // Track if this is the very first load
   const hasLoadedOnce = useRef(false);
   const autoFetchTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Infinite query for users with aggressive fetching
   const {
     data,
     fetchNextPage,
@@ -58,72 +55,38 @@ function App() {
         0
       );
 
-      // Continue fetching if:
-      // 1. We haven't reached the maximum user limit
-      // 2. The API has more data (loadedCount < lastPage.total)
-      // 3. The last page had users (lastPage.users.length > 0)
       if (loadedCount >= MAX_USERS) {
-        return undefined; // Stop at max limit
+        return undefined;
       }
 
       if (lastPage.users.length === 0) {
-        return undefined; // No more data from API
+        return undefined;
       }
 
-      // For large datasets, cycle through the data by using modulo
-      // This allows us to fetch more than the API's actual total
       if (loadedCount < lastPage.total) {
         return loadedCount;
       }
 
-      // If API has limited data, cycle through it to reach our target
       return loadedCount < MAX_USERS ? loadedCount % lastPage.total : undefined;
     },
-    placeholderData: (previousData) => previousData, // Keep previous data while loading new data
-    maxPages: Math.ceil(MAX_USERS / BATCH_SIZE), // Limit total pages
+    placeholderData: (previousData) => previousData,
+    maxPages: Math.ceil(MAX_USERS / BATCH_SIZE),
   });
 
-  // Mark that we've loaded data at least once
   if (data && !hasLoadedOnce.current) {
     hasLoadedOnce.current = true;
   }
 
-  // Aggressive auto-fetching to load large dataset in background
-  useEffect(() => {
-    if (!AUTO_FETCH_ENABLED) return;
-
-    // Clear any existing timer
-    if (autoFetchTimer.current) {
-      clearTimeout(autoFetchTimer.current);
-    }
-
-    // Auto-fetch more data if available and not currently fetching
-    if (hasNextPage && !isFetchingNextPage && hasLoadedOnce.current) {
-      autoFetchTimer.current = setTimeout(() => {
-        fetchNextPage();
-      }, 100); // Fetch every 100ms when not actively fetching
-    }
-
-    return () => {
-      if (autoFetchTimer.current) {
-        clearTimeout(autoFetchTimer.current);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, hasLoadedOnce.current, fetchNextPage]);
-
-  // Flatten all pages and apply ALL client-side filters
   const users = useMemo(() => {
     const allUsers = data?.pages.flatMap((page) => page.users) ?? [];
 
     return allUsers.filter((user) => {
-      // Apply gender filter client-side (when search is active, gender wasn't applied server-side)
       if (filters.gender && filters.searchQuery) {
         if (user.gender.toLowerCase() !== filters.gender.toLowerCase()) {
           return false;
         }
       }
 
-      // Apply age range filter client-side
       if (filters.ageRange) {
         const age = user.age;
         switch (filters.ageRange) {
@@ -146,15 +109,55 @@ function App() {
     });
   }, [data, filters.ageRange, filters.gender, filters.searchQuery]);
 
-  const totalCount = data?.pages[0]?.total ?? 0;
   const serverLoadedCount =
     data?.pages.flatMap((page) => page.users).length ?? 0;
 
-  // Check if we have client-side filters active
   const hasClientSideFilters = Boolean(
-    (filters.gender && filters.searchQuery) || // Gender when search is active
-      filters.ageRange // Age range is always client-side
+    (filters.gender && filters.searchQuery) || filters.ageRange
   );
+
+  useEffect(() => {
+    if (!AUTO_FETCH_ENABLED) return;
+
+    if (autoFetchTimer.current) {
+      clearTimeout(autoFetchTimer.current);
+    }
+
+    let shouldContinueWhenEmpty = false;
+    if (users.length === 0) {
+      if (hasClientSideFilters) {
+        shouldContinueWhenEmpty = false;
+      } else {
+        shouldContinueWhenEmpty = serverLoadedCount < 500;
+      }
+    }
+
+    const shouldAutoFetch =
+      hasNextPage &&
+      !isFetchingNextPage &&
+      hasLoadedOnce.current &&
+      (users.length > 0 || shouldContinueWhenEmpty);
+
+    if (shouldAutoFetch) {
+      autoFetchTimer.current = setTimeout(() => {
+        fetchNextPage();
+      }, 100);
+    }
+
+    return () => {
+      if (autoFetchTimer.current) {
+        clearTimeout(autoFetchTimer.current);
+      }
+    };
+  }, [
+    hasNextPage,
+    isFetchingNextPage,
+    hasLoadedOnce.current,
+    users.length,
+    serverLoadedCount,
+    fetchNextPage,
+    hasClientSideFilters,
+  ]);
 
   const handleSelectUser = (userId: number) => {
     setSelectedUsers((prev) => {
@@ -177,11 +180,9 @@ function App() {
 
   const handleFiltersChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
-    setSelectedUsers(new Set()); // Clear selections on filter change
-    // Note: We don't clear currentUser to keep RenderPane showing the same user
+    setSelectedUsers(new Set());
   };
 
-  // Only show full-page loading on the very first load (before any data has been fetched)
   const isInitialLoading = isLoading && !hasLoadedOnce.current;
 
   if (isInitialLoading) {
@@ -212,20 +213,16 @@ function App() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Left Panel - 20% width */}
       <div className="w-1/5 min-w-[300px] flex flex-col">
-        {/* Search and Filter */}
         <SearchFilter
           filters={filters}
           onFiltersChange={handleFiltersChange}
-          totalCount={totalCount}
           loadedCount={users.length}
           serverLoadedCount={serverLoadedCount}
           isLoadingMore={isFetchingNextPage}
           maxUsers={MAX_USERS}
         />
 
-        {/* Card List */}
         <CardList
           users={users}
           selectedUsers={selectedUsers}
@@ -241,12 +238,10 @@ function App() {
         />
       </div>
 
-      {/* Right Panel - 80% width */}
       <div className="w-4/5 flex-1">
         <RenderPane selectedUser={currentUser} />
       </div>
 
-      {/* Selection Bubble */}
       <SelectionBubble count={selectedUsers.size} />
     </div>
   );

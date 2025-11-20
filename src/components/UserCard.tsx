@@ -62,11 +62,11 @@ const UserCard: React.FC<UserCardProps> = ({
         </h3>
         <p className="text-xs text-gray-500 truncate mb-1">{user.email}</p>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-gray-600 font-medium">
+          <p className="text-xs text-gray-600 font-medium truncate">
             {user.company.title}
           </p>
           <span
-            className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${getStatusColor(
+            className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0 ${getStatusColor(
               status
             )}`}
           >

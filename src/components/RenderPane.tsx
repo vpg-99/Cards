@@ -55,9 +55,7 @@ const RenderPane: React.FC<RenderPaneProps> = ({ selectedUser }) => {
 
   return (
     <div className="h-full overflow-y-auto bg-gray-50 p-8">
-      {/* User Card Container */}
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-8">
-        {/* User Header */}
         <div className="flex items-start mb-8">
           <img
             src={selectedUser.image}
@@ -81,9 +79,7 @@ const RenderPane: React.FC<RenderPaneProps> = ({ selectedUser }) => {
           </div>
         </div>
 
-        {/* User Details with Icons */}
         <div className="space-y-6 mb-8">
-          {/* Email */}
           <div className="flex items-start">
             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mr-4 shrink-0">
               <svg
@@ -232,10 +228,8 @@ const RenderPane: React.FC<RenderPaneProps> = ({ selectedUser }) => {
           </div>
         </div>
 
-        {/* Divider */}
         <div className="border-t border-gray-200 my-8"></div>
 
-        {/* Additional Information */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Additional Information
